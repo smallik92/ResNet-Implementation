@@ -9,4 +9,4 @@ Additional support: Coursera Deep learning specialization (Convolutional Neural 
 ## Dataset: 
 SIGNS
 
-![SIGNS dataset](Capture.png)
+![SIGNS dataset](https://github.com/smallik92/ResNet-Implementation/blob/master/Capture.PNG)

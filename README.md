@@ -11,6 +11,6 @@ Additional support: Coursera Deep learning specialization (Convolutional Neural 
 
 ![SIGNS dataset](https://github.com/smallik92/ResNet-Implementation/blob/master/Capture.PNG)
 
-2. Cifar Dataset 
+2. Cifar-10 Dataset 
 
 ![Cifar10 dataset](https://github.com/smallik92/ResNet-Implementation/blob/master/Capture2.PNG)

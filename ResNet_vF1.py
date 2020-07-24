@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from tensorflow import keras
 from keras import layers
 from keras.layers import Input, Add, Dense, Activation, ZeroPadding2D, BatchNormalization, Flatten, Conv2D, AveragePooling2D, MaxPooling2D
@@ -9,7 +10,8 @@ import matplotlib.pyplot as plt
 from keras.datasets import cifar10
 import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+from keras.callbacks import LearningRateScheduler
+from sklearn.model_selection import train_test_split
 
 def first_conv_block(X, filters, kernel_size, strides,):
     """
@@ -83,7 +85,6 @@ def shortcut(residual, input):
         short_cut = input
     return Add()([short_cut, residual])
 
-
 class ResNet(object):
 
     def __init__(self, X_train, y_train, X_test, y_test, num_classes, modelname, building_block, repetitions, init_num_filters, conv1_f):
@@ -154,23 +155,42 @@ class ResNet(object):
 
     def train(self, num_epochs = 50, batch_size = 32, data_aug = False, lr_schedule = True):
 
+
       assert(num_epochs>0 and batch_size>0)
 
+      #split training set into train and valiation
+      X_train, X_val, y_train, y_val = train_test_split(self.X_train, self.y_train, test_size=0.11, random_state=0, shuffle = True)
+
       # Using Callback API for early stopping
-      early_stopper = EarlyStopping(min_delta = 0.0005, patience = 10)
-      #Learning rate scheduling can also be done using Callback API
+      #early_stopper = EarlyStopping(min_delta = 0.0005, patience = 10)
+
+      #Learning rate reduction on plateau using Callback API
       # lr_reducer = ReduceLROnPlateau(factor=0.01, cooldown=0, patience=5, min_lr=0.5e-6)
+
+      def scheduler(epoch, lr):
+        decay = 0.0001
+        lr *= 1./(1+decay*epoch)
+
+        if epoch == 0:
+          lr = lr*10
+        elif epoch== 100 or epoch == 150:
+          lr = lr/10
+
+        return lr
 
       model = self.build() #builds resnet forward model
       if lr_schedule:
         print('Using Learning Rate Scheduling....')
-        learning_rate_init = 0.1
-        opt = keras.optimizers.SGD(learning_rate=learning_rate_init,momentum = 0.9)
-
+        opt = 'SGD'
+        # opt = tf.keras.optimizers.SGD(lr=0.1, momentum = 0.9)
+        lr_schedule = LearningRateScheduler(scheduler, verbose=1)
+        # loss_history = LossHistory()
+        callback_list = [lr_schedule]
       else:
         print('Using fixed learning rate...')
         learning_rate = 0.001
         opt = keras.optimizers.SGD(learning_rate = learning_rate)
+        callback_list = None
 
       #Train model
       print('Training model......')
@@ -180,14 +200,14 @@ class ResNet(object):
         datagen = self.train_data_preprocess()
         datagen.fit(self.X_train)
         model.compile(optimizer = opt, loss = 'categorical_crossentropy', metrics = ['accuracy'])
-        history = model.fit(datagen.flow(self.X_train, self.y_train, batch_size=batch_size),
-                            validation_data=(self.X_test, self.y_test), epochs= num_epochs, steps_per_epoch = self.X_train.shape[0] // batch_size,
-                            shuffle = True, callbacks=[early_stopper], verbose = 1)
+        history = model.fit(datagen.flow(X_train, y_train, batch_size=batch_size),
+                            validation_data=(X_val, y_val), epochs= num_epochs, steps_per_epoch = X_train.shape[0] // batch_size,
+                            shuffle = True, callbacks=callback_list, verbose = 1)
       else:
         print('Not using Data Augmentation....')
         model.compile(optimizer = opt, loss = 'categorical_crossentropy', metrics = ['accuracy'])
-        history = model.fit(self.X_train, self.y_train, batch_size = batch_size, validation_data = (self.X_test, self.y_test),
-                            epochs = num_epochs, shuffle = True, callbacks = [early_stopper], verbose = 1)
+        history = model.fit(X_train, y_train, batch_size = batch_size, validation_data = (X_val, y_val),
+                            epochs = num_epochs, shuffle = True, callbacks = callback_list, verbose = 1)
 
 
       print('Training complete.......')
@@ -257,17 +277,19 @@ def main():
     resnet_network = ResNet(X_train, y_train, X_test, y_test, num_classes, modelname,
                             building_block, repetitions, init_num_filters, conv1_f)
 
-    model, history = resnet_network.train(num_epochs = 100, batch_size = 32, data_aug = True, lr_schedule = True)
+    model, history = resnet_network.train(num_epochs = 250, batch_size = 64, data_aug = True, lr_schedule = True)
     test_accuracy = resnet_network.evaluate(model)
 
     print('Accuracy on test set: {:.3f} %'.format(test_accuracy*100))
 
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+    # plt.plot(history.history['loss'])
+    # plt.plot(history.history['val_loss'])
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
     plt.title('Model Performance')
-    plt.ylabel('loss')
+    plt.ylabel('Accuracy')
     plt.xlabel('epoch')
-    plt.legend(['train loss', 'validation loss'], loc='upper left')
+    plt.legend(['train accuracy', 'validation accuracy'], loc='upper left')
     plt.show()
 
 main()

@@ -14,3 +14,8 @@ Additional support: Coursera Deep learning specialization (Convolutional Neural 
 2. Cifar-10 Dataset 
 
 ![Cifar10 dataset](https://github.com/smallik92/ResNet-Implementation/blob/master/Capture2.PNG)
+
+Accuracy on Cifar-10 dataset after 200 iterations:
+![Accuracy](https://github.com/smallik92/ResNet-Implementation/blob/master/loss_2.png)
+
+Test set accuracy ~85%

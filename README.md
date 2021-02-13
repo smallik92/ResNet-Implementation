@@ -1,6 +1,7 @@
 # ResNet-Implementation
 
-Implementation of Residual Network using Keras functional API 
+Implementation of Residual Network using TensorFlow v2.
+Dependencies: TensorFlow v2, numpy, matplotlib, h5py (for the handsigns dataset).
 
 ## References:
 Original paper: Deep Residual Learning for Image Recognition, He et. al. (2015)
